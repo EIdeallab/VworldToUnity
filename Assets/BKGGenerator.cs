@@ -46,7 +46,14 @@ public class BKGGenerator
     // Use this for initialization
     void Generate()
     {
-        //필요한 subfolder를 만든다. 이미 있으면 건너뛴다.
+        // 새로운 쓰레드에서 Run() 실행
+        Thread t1 = new Thread(new ThreadStart(Run));
+        t1.Start();
+    }
+
+    void Run()
+    {
+        // 필요한 subfolder를 만든다. 이미 있으면 건너뛴다.
         string[] folders1 = { "DEM bil", "DEM txt_Cartesian", "DEM txt_latlon", "DEM txt_UTMK", "DEM dds" };
         MakeSubFolders(storageDirectory, folders1);
         string[] folders2 = { "DEM obj", "DEM obj_UTMK" };
@@ -60,20 +67,20 @@ public class BKGGenerator
         float maxLon = lon + (float)rad / 111000;
         float maxLat = lat + (float)rad / 88000;
 
-        //idx와 idy를 받는 1단계 단계를 생략하고 여기서 직접 계산한다.
+        // idx와 idy를 받는 1단계 단계를 생략하고 여기서 직접 계산한다.
         int minIdx = (int)Mathf.Floor(minLon + 180 / unit);
         int minIdy = (int)Mathf.Floor(minLat + 90 / unit);
         int maxIdx = (int)Mathf.Floor(maxLon + 180 / unit);
         int maxIdy = (int)Mathf.Floor(maxLat + 90 / unit);
 
-        //중복 다운로드를 피하기 위해 현재 있는 파일들 목록을 구한다.
+        // 중복 다운로드를 피하기 위해 현재 있는 파일들 목록을 구한다.
         List<string> fileExistBil = GetFileNames(storageDirectory + "DEM bil\\", ".bil");
         List<string> fileExistTxt = GetFileNames(storageDirectory + "DEM txt_latlon\\", ".txt");
         List<string> fileNamesDds = GetFileNames(storageDirectory + "DEM dds\\", ".dds");
 
         int listLength = maxIdx * maxIdy;
 
-        //단위 구역들을 차례차례 처리한다.
+        // 단위 구역들을 차례차례 처리한다.
         for (int i = minIdx; i <= maxIdx; i++)
         {
             for (int j = minIdy; j <= maxIdy; j++)
@@ -86,7 +93,7 @@ public class BKGGenerator
                 if (!fileNamesDds.Contains(fileNameDds))
                 {
                     string address3_1 = url3 + apiKey + "&Layer=" + layerName2 + "&Level=" + level + "&IDX=" + i + "&IDY=" + j;
-                    RequestFile(address3_1, "DEM dds\\" + fileNameDds);
+                    Task<long> size = RequestFile(address3_1, "DEM dds\\" + fileNameDds);
                 }
                 Debug.Log("tile ok");
 
@@ -96,12 +103,7 @@ public class BKGGenerator
                 {
                     //존재하지 않으면 다운받는다.				
                     string address3 = url3 + apiKey + "&Layer=" + layerName + "&Level=" + level + "&IDX=" + i + "&IDY=" + j;
-                    int size = RequestFile(address3, "DEM bil\\" + fileNameBil);   //IDX와 IDY 및 nodeLevel을 보내서 bil목록들을 받아 bil에 저장한다.
-                    if (size < 16900)
-                    { //제대로 된 파일이 아니면.
-                        Debug.Log("file :" + i + "_" + j + "세션 건너뜀(용량부족)....." + (i + 1) + "/" + listLength);
-                        continue;
-                    }
+                    Task<long> size = RequestFile(address3, "DEM bil\\" + fileNameBil);   //IDX와 IDY 및 nodeLevel을 보내서 bil목록들을 받아 bil에 저장한다.
                 }
 
                 string fileNameParsedTxt = "terrain file_" + i + "_" + j + ".txt";
@@ -181,13 +183,13 @@ public class BKGGenerator
             }
         }
     }
-
+    
     /*
 	 * httpRequest를 보내고 바이너리 파일을 받아 저장한다.
 	 * @param address
 	 * @param fileName
 	 */
-    private static async Task RequestFile(string address, string fileName)
+    private static async Task<long> RequestFile(string address, string fileName)
     {
         long size = 0;
 
@@ -203,19 +205,16 @@ public class BKGGenerator
         {
             HttpStatusCode status = resp.StatusCode;
             Debug.Log(status);  // 정상이면 "OK"
-
+            
             using (Stream respStream = resp.GetResponseStream())
             {
                 using (FileStream fileStream = File.OpenWrite(storageDirectory + fileName))
                 {
-                    respStream.CopyToAsync(fileStream);
+                    await respStream.CopyToAsync(fileStream);
                     size = respStream.Length;
                 }
             }
         }
-        if (size == 0)
-            Debug.Log(fileName + " Request Failed.");
-        else
-            Debug.Log(fileName + " Successfully Saved");
+        return size;
     }
 }
