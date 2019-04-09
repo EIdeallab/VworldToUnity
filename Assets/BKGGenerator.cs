@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using System.Threading;
 using UnityEngine;
 
+/// <summary>
+/// This Class Provide DEM and DDS datas from Vworld. It Need API key.
+/// </summary>
 public class BKGGenerator
 {
     private static float lat = 0;
@@ -26,21 +29,24 @@ public class BKGGenerator
     private List<string> fileNamesDds;
 
     // 요청 파일의 갯수와 확인용 변수
-    static int total = 0;
+    static int totalTask = 0;
     static int progress = 0;
 
     // 요청 url과 api키
-    private static string url3 = "http://xdworld.vworld.kr:8080/XDServer/requestLayerNode?APIKey=";
-    private static string apiKey = "43247F3D-DCBC-3A57-91FE-D8959E540D2C";
+    private static string url3 = @"http://xdworld.vworld.kr:8080/XDServer/requestLayerNode?APIKey=";
+    private static string apiKey = "";
 
     //중복 다운이나 변환하지 않도록 저장할 폴더
-    private static string storageDirectory = Application.dataPath + "\\resource\\vworld_terrain\\";
+    private static string storageDirectory;
     private static int fileSize;
 
-    public BKGGenerator() { }
+    public BKGGenerator() {
+        storageDirectory = Application.dataPath;
+    }
 
     public BKGGenerator(float latitude, float longitude, int radius, int level)
     {
+        storageDirectory = Application.dataPath;
         lat = latitude;
         lon = longitude;
         rad = radius;
@@ -59,15 +65,15 @@ public class BKGGenerator
 
     public float GetProgressStatus()
     {
-        return (progress != 0) ? (float)total / progress : 0;
+        return (progress != 0) ? (float)totalTask / progress : 0;
     }
 
     // Use this for initialization
-    void Generate()
+    public void Generate()
     {
 
         // 필요한 subfolder를 만든다. 이미 있으면 건너뛴다.
-        string[] folders1 = { "DEM bil", "DEM txt_latlon", "DEM dds" };
+        string[] folders1 = { "\\DEM bil", "\\DEM txt_latlon", "\\DEM dds" };
         MakeSubFolders(storageDirectory, folders1);
         
         float minLon = lon - (float)rad / 111000; //경도
@@ -76,24 +82,24 @@ public class BKGGenerator
         float maxLat = lat + (float)rad / 88000;
 
         // idx와 idy를 받는 1단계 단계를 생략하고 여기서 직접 계산한다.
-        int minIdx = (int)Mathf.Floor(minLon + 180 / unit);
-        int minIdy = (int)Mathf.Floor(minLat + 90 / unit);
-        int maxIdx = (int)Mathf.Floor(maxLon + 180 / unit);
-        int maxIdy = (int)Mathf.Floor(maxLat + 90 / unit);
+        minIdx = (int)Mathf.Floor(minLon + 180 / unit);
+        minIdy = (int)Mathf.Floor(minLat + 90 / unit);
+        maxIdx = (int)Mathf.Floor(maxLon + 180 / unit);
+        maxIdy = (int)Mathf.Floor(maxLat + 90 / unit);
 
         // 중복 다운로드를 피하기 위해 현재 있는 파일들 목록을 구한다.
-        fileExistBil = GetFileNames(storageDirectory + "DEM bil\\", ".bil");
-        fileExistTxt = GetFileNames(storageDirectory + "DEM txt_latlon\\", ".txt");
-        fileNamesDds = GetFileNames(storageDirectory + "DEM dds\\", ".dds");
+        fileExistBil = GetFileNames(storageDirectory + "\\DEM bil\\", ".bil");
+        fileExistTxt = GetFileNames(storageDirectory + "\\DEM txt_latlon\\", ".txt");
+        fileNamesDds = GetFileNames(storageDirectory + "\\DEM dds\\", ".dds");
 
-        int listLength = maxIdx * maxIdy;
-
+        totalTask = maxIdx * maxIdy;
+        
         // 새로운 쓰레드에서 Run() 실행
         Thread t1 = new Thread(new ThreadStart(Run));
         t1.Start();
     }
 
-    void Run()
+    private void Run()
     {
         string layerName = "dem";
         string layerName2 = "tile";
@@ -111,7 +117,7 @@ public class BKGGenerator
                 if (!fileNamesDds.Contains(fileNameDds))
                 {
                     string address3_1 = url3 + apiKey + "&Layer=" + layerName2 + "&Level=" + lv + "&IDX=" + i + "&IDY=" + j;
-                    Task<long> size = RequestFile(address3_1, "DEM dds\\" + fileNameDds);
+                    long size = RequestFile(address3_1, "\\DEM dds\\" + fileNameDds);
                 }
                 Debug.Log("tile ok");
 
@@ -121,7 +127,7 @@ public class BKGGenerator
                 {
                     //존재하지 않으면 다운받는다.				
                     string address3 = url3 + apiKey + "&Layer=" + layerName + "&Level=" + lv + "&IDX=" + i + "&IDY=" + j;
-                    Task<long> size = RequestFile(address3, "DEM bil\\" + fileNameBil);   //IDX와 IDY 및 nodeLevel을 보내서 bil목록들을 받아 bil에 저장한다.
+                    long size = RequestFile(address3, "\\DEM bil\\" + fileNameBil);   //IDX와 IDY 및 nodeLevel을 보내서 bil목록들을 받아 bil에 저장한다.
                 }
 
                 string fileNameParsedTxt = "terrain file_" + i + "_" + j + ".txt";
@@ -132,8 +138,8 @@ public class BKGGenerator
 
                 string fileNameObj = "obj file_" + i + "_" + j + ".obj";
 
-
-                Debug.Log(fileNameParsedTxt + "저장완료....." + (i + 1) + "/" + total);
+                Debug.Log(fileNameParsedTxt + "저장완료....." + (i + 1) + "/" + totalTask);
+                progress++;
             }
         }
     }
@@ -184,7 +190,7 @@ public class BKGGenerator
 
     private void BilParser(string fileName)
     {
-        FileStream inFileStream = File.OpenRead(storageDirectory + "DEM bil\\" + fileName);
+        FileStream inFileStream = File.OpenRead(storageDirectory + "\\DEM bil\\" + fileName);
         using (BinaryReader inputStream = new BinaryReader(inFileStream))
         {
             //terrain height
@@ -206,31 +212,20 @@ public class BKGGenerator
 	 * @param address
 	 * @param fileName
 	 */
-    private static async Task<long> RequestFile(string address, string fileName)
+    private static long RequestFile(string address, string fileName)
     {
         long size = 0;
-
-        string url = address;  //테스트 사이트
-        string responseText = string.Empty;
+        string url = address;
 
         HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-        request.Method = "GET";
-        request.Timeout = 30 * 1000; // 30초
-        request.Headers.Add("Referer", "http://localhost:4141");
-        
-        using (HttpWebResponse resp = (HttpWebResponse)request.GetResponse())
+        request.AutomaticDecompression = DecompressionMethods.GZip;
+
+        using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+        using (Stream stream = response.GetResponseStream())
+        using (FileStream fileStream = File.OpenWrite(storageDirectory + fileName))
         {
-            HttpStatusCode status = resp.StatusCode;
-            Debug.Log(status);  // 정상이면 "OK"
-            
-            using (Stream respStream = resp.GetResponseStream())
-            {
-                using (FileStream fileStream = File.OpenWrite(storageDirectory + fileName))
-                {
-                    await respStream.CopyToAsync(fileStream);
-                    size = respStream.Length;
-                }
-            }
+            stream.CopyTo(fileStream);
+            size = stream.Length;
         }
         return size;
     }

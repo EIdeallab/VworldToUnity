@@ -9,6 +9,7 @@ public class BKGGeneratorUI : EditorWindow
     private static float lon;
     private static int rad;
     private static int level;
+    private static float progress;
 
     private static BKGGenerator generator;
 
@@ -32,6 +33,11 @@ public class BKGGeneratorUI : EditorWindow
         get { return level; }
         set { level = Mathf.Clamp(value, 7, 15); }
     }
+    private float Progress
+    {
+        get { return progress; }
+        set { progress = Mathf.Clamp01(value); }
+    }
 
     [MenuItem("Background/Background Creator")]
     private static void Init()
@@ -42,7 +48,8 @@ public class BKGGeneratorUI : EditorWindow
         level = 8;
         
         var window = (BKGGeneratorUI)GetWindow(typeof(BKGGeneratorUI));
-        generator = new BKGGenerator(lat, lon, rad, level);
+        
+
         window.Show();
     }
 
@@ -52,21 +59,22 @@ public class BKGGeneratorUI : EditorWindow
         lon = EditorGUILayout.FloatField("Longitude", lon);
         rad = EditorGUILayout.IntSlider("Radius", rad, 1000, 60000);
         level = EditorGUILayout.IntSlider("Level", level, 7, 15);
+        
+        generator = new BKGGenerator();
 
         if (GUILayout.Button("Load"))
         {
-            
+            generator.Init(lat, lon, rad, level);
+            generator.Generate();
         }
-    }
-
-    // Use this for initialization
-    void Start () {
         
-
+        EditorGUI.ProgressBar(new Rect(3, 100, position.width - 6, 20), Progress / 100, (Progress*100).ToString());
     }
-	
+    
 	// Update is called once per frame
-	void Update () {
-		
-	}
+	void Update ()
+    {
+        if(generator != null)
+            Progress = generator.GetProgressStatus();
+    }
 }
