@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Threading;
 using UnityEngine;
+
 
 /// <summary>
 /// This Class Provide DEM and DDS datas from Vworld. It Need API key.
@@ -28,13 +28,13 @@ public class BKGGenerator
     private List<string> fileExistTxt;
     private List<string> fileNamesDds;
 
+    // 요청 url과 api키
+    private string url3 = @"http://xdworld.vworld.kr:8080/XDServer/requestLayerNode?APIKey=";
+    private string apiKey = "43247F3D-DCBC-3A57-91FE-D8959E540D2C";
+
     // 요청 파일의 갯수와 확인용 변수
     static int totalTask = 0;
     static int progress = 0;
-
-    // 요청 url과 api키
-    private static string url3 = @"http://xdworld.vworld.kr:8080/XDServer/requestLayerNode?APIKey=";
-    private static string apiKey = "";
 
     //중복 다운이나 변환하지 않도록 저장할 폴더
     private static string storageDirectory;
@@ -65,7 +65,7 @@ public class BKGGenerator
 
     public float GetProgressStatus()
     {
-        return (progress != 0) ? (float)totalTask / progress : 0;
+        return (totalTask != 0) ? (float)progress/ totalTask : 0;
     }
 
     // Use this for initialization
@@ -75,73 +75,34 @@ public class BKGGenerator
         // 필요한 subfolder를 만든다. 이미 있으면 건너뛴다.
         string[] folders1 = { "\\DEM bil", "\\DEM txt_latlon", "\\DEM dds" };
         MakeSubFolders(storageDirectory, folders1);
-        
-        float minLon = lon - (float)rad / 111000; //경도
-        float minLat = lat - (float)rad / 88000; //위도	 
-        float maxLon = lon + (float)rad / 111000;
-        float maxLat = lat + (float)rad / 88000;
-
-        // idx와 idy를 받는 1단계 단계를 생략하고 여기서 직접 계산한다.
-        minIdx = (int)Mathf.Floor(minLon + 180 / unit);
-        minIdy = (int)Mathf.Floor(minLat + 90 / unit);
-        maxIdx = (int)Mathf.Floor(maxLon + 180 / unit);
-        maxIdy = (int)Mathf.Floor(maxLat + 90 / unit);
 
         // 중복 다운로드를 피하기 위해 현재 있는 파일들 목록을 구한다.
         fileExistBil = GetFileNames(storageDirectory + "\\DEM bil\\", ".bil");
         fileExistTxt = GetFileNames(storageDirectory + "\\DEM txt_latlon\\", ".txt");
         fileNamesDds = GetFileNames(storageDirectory + "\\DEM dds\\", ".dds");
 
-        totalTask = maxIdx * maxIdy;
-        
-        // 새로운 쓰레드에서 Run() 실행
-        Thread t1 = new Thread(new ThreadStart(Run));
-        t1.Start();
-    }
+        float minLon = lon - (float)rad / 111000; //경도
+        float minLat = lat - (float)rad / 88000; //위도	 
+        float maxLon = lon + (float)rad / 111000;
+        float maxLat = lat + (float)rad / 88000;
 
-    private void Run()
-    {
-        string layerName = "dem";
-        string layerName2 = "tile";
+        // idx와 idy를 받는 1단계 단계를 생략하고 여기서 직접 계산한다.
+        minIdx = (int)Mathf.Floor((minLon + 180) / unit);
+        minIdy = (int)Mathf.Floor((minLat + 90)  / unit);
+        maxIdx = (int)Mathf.Floor((maxLon + 180) / unit);
+        maxIdy = (int)Mathf.Floor((maxLat + 90)  / unit);
 
-        // 단위 구역들을 차례차례 처리한다.
-        for (int i = minIdx; i <= maxIdx; i++)
+        totalTask = (maxIdx - minIdx) * (maxIdy - minIdy);
+
+        Debug.Log("threadStart");
+        Thread t1 = new Thread(() =>
         {
-            for (int j = minIdy; j <= maxIdy; j++)
-            {
-                Debug.Log("file :" + i + "_" + j + "세션 시작....." + (i + 1) + "/" + i * j);
-
-                //tile 이미지를 받아온다.
-                string fileNameDds = "tile_" + i + "_" + j + ".dds";
-
-                if (!fileNamesDds.Contains(fileNameDds))
-                {
-                    string address3_1 = url3 + apiKey + "&Layer=" + layerName2 + "&Level=" + lv + "&IDX=" + i + "&IDY=" + j;
-                    long size = RequestFile(address3_1, "\\DEM dds\\" + fileNameDds);
-                }
-                Debug.Log("tile ok");
-
-                //만약 이미 bil 파일이 존재하면 건너뛴다.
-                string fileNameBil = "terrain file_" + i + "_" + j + ".bil";
-                if (!fileExistBil.Contains(fileNameBil))
-                {
-                    //존재하지 않으면 다운받는다.				
-                    string address3 = url3 + apiKey + "&Layer=" + layerName + "&Level=" + lv + "&IDX=" + i + "&IDY=" + j;
-                    long size = RequestFile(address3, "\\DEM bil\\" + fileNameBil);   //IDX와 IDY 및 nodeLevel을 보내서 bil목록들을 받아 bil에 저장한다.
-                }
-
-                string fileNameParsedTxt = "terrain file_" + i + "_" + j + ".txt";
-                if (!fileExistTxt.Contains(fileNameParsedTxt))
-                {
-                    BilParser(fileNameBil); //dat를 다시 읽고 txt에 파싱한다.
-                }
-
-                string fileNameObj = "obj file_" + i + "_" + j + ".obj";
-
-                Debug.Log(fileNameParsedTxt + "저장완료....." + (i + 1) + "/" + totalTask);
-                progress++;
-            }
-        }
+            Run();
+        });
+        t1.Start();
+        Debug.Log("threadStart");
+        t1.Join();
+        Debug.Log("threadJoin");
     }
 
     private void MakeSubFolders(string fileLocation, string[] subfolders)
@@ -156,7 +117,7 @@ public class BKGGenerator
                 {
                     if (files[j].Equals(subfolder))
                     {
-                        isExist = true; //같은 이름이 있으면 빠져나오고
+                        isExist = true; //같은 이름이 있으면 스킵
                         break;
                     }
                 } //for
@@ -167,6 +128,100 @@ public class BKGGenerator
                 newDir.Create();
             }
         }
+    }
+
+    public void Run()
+    {
+        string layerName = "dem";
+        string layerName2 = "tile";
+
+        // 단위 구역들을 차례차례 처리한다.
+        for (int i = minIdx; i <= maxIdx; i++)
+        {
+            for (int j = minIdy; j <= maxIdy; j++)
+            {
+
+                //tile 이미지를 받아온다.
+                string fileNameDds = "tile_" + i + "_" + j + ".dds";
+
+                long size = 0;
+                if (!fileNamesDds.Contains(fileNameDds))
+                {
+                    string address3_1 = url3 + apiKey + "&Layer=" + layerName2 + "&Level=" + lv + "&IDX=" + i + "&IDY=" + j;
+                    size = RequestFile(address3_1, "\\DEM dds\\" + fileNameDds);
+                }
+
+                //만약 이미 bil 파일이 존재하면 건너뛴다.
+                string fileNameBil = "terrain file_" + i + "_" + j + ".bil";
+                if (!fileExistBil.Contains(fileNameBil))
+                {
+                    //존재하지 않으면 다운받는다.
+                    string address3 = url3 + apiKey + "&Layer=" + layerName + "&Level=" + lv + "&IDX=" + i + "&IDY=" + j;
+                    size = RequestFile(address3, "\\DEM bil\\" + fileNameBil);   //IDX와 IDY 및 nodeLevel을 보내서 bil목록들을 받아 bil에 저장한다.
+                    if (size < 16900)
+                    {
+                        //제대로 된 파일이 아니면
+                        continue;
+                    }
+                }
+
+                string fileNameParsedTxt = "terrain file_" + i + "_" + j + ".txt";
+                if (!fileExistTxt.Contains(fileNameParsedTxt))
+                {
+                    BilParser(fileNameBil); //dat를 다시 읽고 txt에 파싱한다.
+                }
+
+                string fileNameObj = "obj file_" + i + "_" + j + ".obj";
+                
+                progress++;
+            }
+        }
+    }
+
+    private void BilParser(string fileName)
+    {
+        FileStream inFileStream = File.OpenRead(storageDirectory + "\\DEM bil\\" + fileName);
+        using (BinaryReader inputStream = new BinaryReader(inFileStream))
+        {
+            //terrain height
+            //vworld에서 제공하는 DEM이 65x65개의 점으로 되어 있다.
+            for (int ny = 64; ny >= 0; ny--)
+            {
+                for (int nx = 0; nx < 65; nx++)
+                {
+                    float height = inputStream.ReadSingle();
+                    //65x65의 격자이지만 후속 작업을 고려하여 일렬로 기록한다.
+                }
+            }
+        }
+    }
+
+    /*
+	 * httpRequest를 보내고 바이너리 파일을 받아 저장한다.
+	 * @param address
+	 * @param fileName
+	 */
+    private long RequestFile(string address, string fileName)
+    {
+        long size = 0;
+        string url = address;
+        try
+        {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            request.AutomaticDecompression = DecompressionMethods.GZip;
+
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            using (Stream stream = response.GetResponseStream())
+            using (FileStream fileStream = File.OpenWrite(storageDirectory + fileName))
+            {
+                stream.CopyTo(fileStream);
+                size = stream.Length;
+            }
+        }
+        catch (Exception e)
+        {
+        }
+        return size;
     }
 
     private List<string> GetFileNames(string fileLocation, string extension)
@@ -186,47 +241,5 @@ public class BKGGenerator
             }
         }
         return fileNames;
-    }
-
-    private void BilParser(string fileName)
-    {
-        FileStream inFileStream = File.OpenRead(storageDirectory + "\\DEM bil\\" + fileName);
-        using (BinaryReader inputStream = new BinaryReader(inFileStream))
-        {
-            //terrain height
-            //vworld에서 제공하는 DEM이 65x65개의 점으로 되어 있다.
-            for (int ny = 64; ny >= 0; ny--)
-            {
-                for (int nx = 0; nx < 65; nx++)
-                {
-                    float height = inputStream.ReadSingle();
-                    //65x65의 격자이지만 후속 작업을 고려하여 일렬로 기록한다.
-                    Debug.Log("" + height);
-                }
-            }
-        }
-    }
-    
-    /*
-	 * httpRequest를 보내고 바이너리 파일을 받아 저장한다.
-	 * @param address
-	 * @param fileName
-	 */
-    private static long RequestFile(string address, string fileName)
-    {
-        long size = 0;
-        string url = address;
-
-        HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-        request.AutomaticDecompression = DecompressionMethods.GZip;
-
-        using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-        using (Stream stream = response.GetResponseStream())
-        using (FileStream fileStream = File.OpenWrite(storageDirectory + fileName))
-        {
-            stream.CopyTo(fileStream);
-            size = stream.Length;
-        }
-        return size;
     }
 }
