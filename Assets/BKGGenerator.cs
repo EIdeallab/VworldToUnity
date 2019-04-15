@@ -25,12 +25,12 @@ public class BKGGenerator
 
     // 중복 다운로드를 피하기위한 파일 목록
     private List<string> fileExistBil;
-    private List<string> fileExistTxt;
+    private List<string> fileExistRaw;
     private List<string> fileNamesDds;
 
     // 요청 url과 api키
     private string url3 = @"http://xdworld.vworld.kr:8080/XDServer/requestLayerNode?APIKey=";
-    private string apiKey = "43247F3D-DCBC-3A57-91FE-D8959E540D2C";
+    private string apiKey = "";
 
     // 요청 파일의 갯수와 확인용 변수
     static int totalTask = 0;
@@ -73,12 +73,12 @@ public class BKGGenerator
     {
 
         // 필요한 subfolder를 만든다. 이미 있으면 건너뛴다.
-        string[] folders1 = { "\\DEM bil", "\\DEM txt_latlon", "\\DEM dds" };
+        string[] folders1 = { "\\DEM bil", "\\DEM raw", "\\DEM dds" };
         MakeSubFolders(storageDirectory, folders1);
 
         // 중복 다운로드를 피하기 위해 현재 있는 파일들 목록을 구한다.
         fileExistBil = GetFileNames(storageDirectory + "\\DEM bil\\", ".bil");
-        fileExistTxt = GetFileNames(storageDirectory + "\\DEM txt_latlon\\", ".txt");
+        fileExistRaw = GetFileNames(storageDirectory + "\\DEM raw\\", ".raw");
         fileNamesDds = GetFileNames(storageDirectory + "\\DEM dds\\", ".dds");
 
         float minLon = lon - (float)rad / 111000; //경도
@@ -165,10 +165,10 @@ public class BKGGenerator
                     }
                 }
 
-                string fileNameParsedTxt = "terrain file_" + i + "_" + j + ".txt";
-                if (!fileExistTxt.Contains(fileNameParsedTxt))
+                string fileNameParsedRaw = "terrain file_" + i + "_" + j + ".raw";
+                if (!fileExistRaw.Contains(fileNameParsedRaw))
                 {
-                    BilParser(fileNameBil); //dat를 다시 읽고 txt에 파싱한다.
+                    BilParser(fileNameBil, fileNameParsedRaw); //bil파일을 다시 읽고 16비트 raw파일로 저장한다.
                 }
 
                 string fileNameObj = "obj file_" + i + "_" + j + ".obj";
@@ -178,10 +178,12 @@ public class BKGGenerator
         }
     }
 
-    private void BilParser(string fileName)
+    private void BilParser(string bilFileName, string rawFileName)
     {
-        FileStream inFileStream = File.OpenRead(storageDirectory + "\\DEM bil\\" + fileName);
+        using (FileStream inFileStream = File.OpenRead(storageDirectory + "\\DEM bil\\" + bilFileName))
         using (BinaryReader inputStream = new BinaryReader(inFileStream))
+        using (FileStream outFileStream = File.OpenWrite(storageDirectory + "\\DEM raw\\" + rawFileName))
+        using (BinaryWriter outputStream = new BinaryWriter(outFileStream))
         {
             //terrain height
             //vworld에서 제공하는 DEM이 65x65개의 점으로 되어 있다.
@@ -189,8 +191,10 @@ public class BKGGenerator
             {
                 for (int nx = 0; nx < 65; nx++)
                 {
+                    //65x65의 격자를 short 형태로 저장한다.
                     float height = inputStream.ReadSingle();
-                    //65x65의 격자이지만 후속 작업을 고려하여 일렬로 기록한다.
+                    short nHeight = Convert.ToInt16(height);
+                    outputStream.Write(nHeight);
                 }
             }
         }
