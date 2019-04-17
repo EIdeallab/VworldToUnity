@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="Assets\BKGGenerator.cs" />
     <Compile Include="Assets\BKGGeneratorUI.cs" />
+    <Compile Include="Assets\LoadTerrain.cs" />
     <Reference Include="UnityEditor.StandardEvents">
       <HintPath>C:/Users/adsha/OneDrive/바탕 화면/HDRGenerator/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
     </Reference>
