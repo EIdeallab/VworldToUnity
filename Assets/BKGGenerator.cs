@@ -5,7 +5,6 @@ using System.Net;
 using System.Threading;
 using UnityEngine;
 
-
 /// <summary>
 /// This Class Provide DEM and DDS datas from Vworld. It Need API key.
 /// </summary>
@@ -30,7 +29,7 @@ public class BKGGenerator
 
     // 요청 url과 api키
     private string url3 = @"http://xdworld.vworld.kr:8080/XDServer/requestLayerNode?APIKey=";
-    private string apiKey = "";
+    private string apiKey = "43247F3D-DCBC-3A57-91FE-D8959E540D2C";
 
     // 요청 파일의 갯수와 확인용 변수
     static int totalTask = 0;
@@ -94,15 +93,11 @@ public class BKGGenerator
 
         totalTask = (maxIdx - minIdx) * (maxIdy - minIdy);
 
-        Debug.Log("threadStart");
         Thread t1 = new Thread(() =>
         {
             Run();
         });
         t1.Start();
-        Debug.Log("threadStart");
-        t1.Join();
-        Debug.Log("threadJoin");
     }
 
     private void MakeSubFolders(string fileLocation, string[] subfolders)
@@ -170,8 +165,6 @@ public class BKGGenerator
                 {
                     BilParser(fileNameBil, fileNameParsedRaw); //bil파일을 다시 읽고 16비트 raw파일로 저장한다.
                 }
-
-                string fileNameObj = "obj file_" + i + "_" + j + ".obj";
                 
                 progress++;
             }
@@ -222,8 +215,9 @@ public class BKGGenerator
                 size = stream.Length;
             }
         }
-        catch (Exception e)
+        catch (Exception)
         {
+            return -1;
         }
         return size;
     }

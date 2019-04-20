@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(BKGGeneratorUI))]
-[CanEditMultipleObjects]
+//[CustomEditor(typeof(BKGGeneratorUI))]
+//[CanEditMultipleObjects]
 public class BKGGeneratorUI : EditorWindow
 {
     private static float lat;
@@ -11,7 +11,7 @@ public class BKGGeneratorUI : EditorWindow
     private static int level;
     private static float progress;
 
-    int a= 0;
+    private static int layoutOffest;
 
     private static BKGGenerator generator;
 
@@ -44,6 +44,7 @@ public class BKGGeneratorUI : EditorWindow
     [MenuItem("Background/Background Creator")]
     private static void Init()
     {
+        layoutOffest = 0;
         lat = 0;
         lon = 0;
         rad = 30000;
@@ -59,14 +60,31 @@ public class BKGGeneratorUI : EditorWindow
         lon = EditorGUILayout.FloatField("Longitude", lon);
         rad = EditorGUILayout.IntSlider("Radius", rad, 1000, 60000);
         level = EditorGUILayout.IntSlider("Level", level, 7, 15);
+
+        #region Load Data
         
-        if (GUILayout.Button("Load"))
+        if (GUILayout.Button("Load Data"))
         {
             generator = new BKGGenerator();
             generator.Init(lat, lon, rad, level);
             generator.Generate();
-            Progress = generator.GetProgressStatus();
         }
-        EditorGUI.ProgressBar(new Rect(3, 100, position.width - 6, 20), a / 100, (Progress*100).ToString());
+        if(generator != null)
+            Progress = generator.GetProgressStatus();
+        else
+            Progress = 0;
+        EditorGUI.ProgressBar(new Rect(3, 100, position.width - 6, 20), Progress, (Progress * 100).ToString());
+
+        #endregion
+
+        #region Render Data
+        layoutOffest = 0;
+        if (GUILayout.Button("Render Data"))
+        {
+            generator = new BKGGenerator();
+            generator.Init(lat, lon, rad, level);
+            generator.Generate();
+        }
+        #endregion
     }
 }
