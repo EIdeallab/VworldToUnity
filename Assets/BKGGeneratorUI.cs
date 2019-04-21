@@ -9,11 +9,18 @@ public class BKGGeneratorUI : EditorWindow
     private static float lon;
     private static int rad;
     private static int level;
+
+    private static Vector2Int minIndex;
+    private static Vector2Int maxIndex;
+    private static int resolution;
+
     private static float progress;
 
-    private static int layoutOffest;
+    private Rect LoadDataArea;
+    private Rect RenderDataArea;
 
     private static BKGGenerator generator;
+    private static TerrainRenderer renderer;
 
     public float Lat
     {
@@ -40,11 +47,15 @@ public class BKGGeneratorUI : EditorWindow
         get { return progress; }
         set { progress = Mathf.Clamp01(value); }
     }
+    private int Resolution
+    {
+        get { return resolution; }
+        set { resolution = Mathf.NextPowerOfTwo(value); }
+    }
 
     [MenuItem("Background/Background Creator")]
     private static void Init()
     {
-        layoutOffest = 0;
         lat = 0;
         lon = 0;
         rad = 30000;
@@ -56,13 +67,16 @@ public class BKGGeneratorUI : EditorWindow
 
     private void OnGUI()
     {
+        int offset = 0;
+        LoadDataArea = new Rect(0, offset += 0, position.width, 100);
+        RenderDataArea = new Rect(0, offset += 100, position.width, 100);
+
+        #region Load Data
+        GUILayout.BeginArea(LoadDataArea);
         lat = EditorGUILayout.FloatField("Latitude", lat);
         lon = EditorGUILayout.FloatField("Longitude", lon);
         rad = EditorGUILayout.IntSlider("Radius", rad, 1000, 60000);
         level = EditorGUILayout.IntSlider("Level", level, 7, 15);
-
-        #region Load Data
-        
         if (GUILayout.Button("Load Data"))
         {
             generator = new BKGGenerator();
@@ -73,18 +87,23 @@ public class BKGGeneratorUI : EditorWindow
             Progress = generator.GetProgressStatus();
         else
             Progress = 0;
-        EditorGUI.ProgressBar(new Rect(3, 100, position.width - 6, 20), Progress, (Progress * 100).ToString());
-
+        GUILayout.EndArea();
         #endregion
 
         #region Render Data
-        layoutOffest = 0;
+        GUILayout.BeginArea(RenderDataArea);
+        minIndex = EditorGUILayout.Vector2IntField("MinIndex", minIndex);
+        maxIndex = EditorGUILayout.Vector2IntField("MaxIndex", maxIndex);
+        resolution = EditorGUILayout.IntSlider(resolution, 32, 1024);
         if (GUILayout.Button("Render Data"))
         {
-            generator = new BKGGenerator();
-            generator.Init(lat, lon, rad, level);
-            generator.Generate();
+            renderer = new TerrainRenderer();
+            renderer.Init(minIndex.x, maxIndex.y, minIndex.y, maxIndex.y, resolution);
+            renderer.Run();
         }
+        GUILayout.EndArea();
         #endregion
+        
+        EditorGUI.ProgressBar(new Rect(3, position.height - 24, position.width - 6, 20), Progress, (Progress * 100).ToString());
     }
 }

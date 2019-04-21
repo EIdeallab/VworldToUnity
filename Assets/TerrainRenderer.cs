@@ -4,7 +4,7 @@ using System.IO;
 using System;
 using UnityEngine;
 
-public class TerrainLoader : MonoBehaviour
+public class TerrainRenderer : MonoBehaviour
 {
     private int minIdx;
     private int minIdy;
@@ -26,6 +26,15 @@ public class TerrainLoader : MonoBehaviour
 
     public void Run ()
     {
+        // File check
+        for (int y = minIdy; y < maxIdy; y++)
+        {
+            for (int x = minIdx; x < maxIdx; x++)
+            {
+
+
+            }
+        }
         terrrains = new Terrain[maxIdy - minIdy, maxIdx - minIdx];
         for (int y = minIdy; y < maxIdy; y++)
         {
