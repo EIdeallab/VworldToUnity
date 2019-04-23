@@ -19,6 +19,7 @@ public class BKGGeneratorUI : EditorWindow
     private Rect LoadDataArea;
     private Rect RenderDataArea;
 
+    private static BKGGeneratorUI window;
     private static BKGGenerator generator;
     private static TerrainRenderer renderer;
 
@@ -61,16 +62,19 @@ public class BKGGeneratorUI : EditorWindow
         rad = 30000;
         level = 8;
         
-        var window = (BKGGeneratorUI)GetWindow(typeof(BKGGeneratorUI));
+        window = GetWindow<BKGGeneratorUI>();
+        window.maxSize = window.minSize = new Vector2(300, 400);
         window.Show();
     }
 
     private void OnGUI()
     {
         int offset = 0;
-        LoadDataArea = new Rect(0, offset += 0, position.width, 100);
-        RenderDataArea = new Rect(0, offset += 100, position.width, 100);
+        LoadDataArea = new Rect(3, offset += 0, position.width-6, 100);
+        RenderDataArea = new Rect(3, offset += 100, position.width-6, 120);
 
+        GUILayout.ExpandHeight(false);
+        GUILayout.ExpandWidth(false);
         #region Load Data
         GUILayout.BeginArea(LoadDataArea);
         lat = EditorGUILayout.FloatField("Latitude", lat);
@@ -103,7 +107,7 @@ public class BKGGeneratorUI : EditorWindow
         }
         GUILayout.EndArea();
         #endregion
-        
+
         EditorGUI.ProgressBar(new Rect(3, position.height - 24, position.width - 6, 20), Progress, (Progress * 100).ToString());
     }
 }

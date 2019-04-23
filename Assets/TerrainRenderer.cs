@@ -31,7 +31,7 @@ public class TerrainRenderer : MonoBehaviour
         {
             for (int x = minIdx; x < maxIdx; x++)
             {
-
+                
 
             }
         }
