@@ -29,7 +29,7 @@ public class BKGGenerator
 
     // 요청 url과 api키
     private string url3 = @"http://xdworld.vworld.kr:8080/XDServer/requestLayerNode?APIKey=";
-    private string apiKey = "43247F3D-DCBC-3A57-91FE-D8959E540D2C";
+    private string apiKey = "";
 
     // 요청 파일의 갯수와 확인용 변수
     static int totalTask = 0;

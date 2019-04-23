@@ -27,20 +27,31 @@ public class TerrainRenderer : MonoBehaviour
     public void Run ()
     {
         // File check
+        DirectoryInfo info = new DirectoryInfo(Application.dataPath + "\\DEM raw\\");
+        if (info == null)
+            return;
+        FileInfo[] fileInfo = info.GetFiles();
+
         for (int y = minIdy; y < maxIdy; y++)
         {
             for (int x = minIdx; x < maxIdx; x++)
             {
-                
-
+                String assetName = Application.dataPath + "\\DEM raw\\" + "terrain file_" + x + "_" + y + ".raw";
+                if (!File.Exists(assetName))
+                {
+                    Debug.Log("terrain file_" + x + "_" + y + ".raw" + " not exist. Build failed.");
+                    return;
+                }
             }
         }
-        terrrains = new Terrain[maxIdy - minIdy, maxIdx - minIdx];
-        for (int y = minIdy; y < maxIdy; y++)
+        
+        int mx = maxIdx - minIdx;
+        int my = maxIdy - minIdy;
+        for (int y = 0; y < my; y++)
         {
-            for (int x = minIdx; x < maxIdx; x++)
+            for (int x = 0; x < mx; x++)
             {
-                byte[] bytes = File.ReadAllBytes(@"Assets\DEM dds\tile_" + x + "_" + y + ".dds");
+                byte[] bytes = File.ReadAllBytes(@"Assets\DEM dds\tile_" + (x + minIdx) + "_" + (y + minIdy) + ".dds");
                 Texture2D ddsTexture = LoadTextureDXT(bytes, TextureFormat.DXT1);
                 ddsTexture.filterMode = FilterMode.Bilinear;
                 SplatPrototype[] tex = new SplatPrototype[1];
@@ -48,8 +59,18 @@ public class TerrainRenderer : MonoBehaviour
                 tex[0].texture = ddsTexture;
                 tex[0].tileSize = new Vector2(resolution, resolution);
 
-                terrrains[y ,x] = GetComponent<Terrain>();
-                terrrains[y, x].terrainData.splatPrototypes = tex;
+                TerrainData terrainData = new TerrainData();
+                terrainData.splatPrototypes = tex;
+                terrainData.heightmapResolution = resolution;
+                terrainData.size = new Vector3(resolution, resolution, resolution);
+                float[,] heightMap = LoadHeigtmap(x + minIdx, y + minIdy);
+
+                terrainData.SetHeights(0, 0, heightMap);
+
+                // Create Game Object
+                GameObject terrainObject = Terrain.CreateTerrainGameObject(terrainData);
+                terrainObject.name = "terrain_" + x + "_" + y;
+                terrainObject.transform.position = new Vector3(x * resolution, 0, -y * resolution);
             }
         }
     }
@@ -75,6 +96,24 @@ public class TerrainRenderer : MonoBehaviour
         texture.Apply();
 
         return texture;
+    }
+
+    public float[,] LoadHeigtmap(int idx, int idy)
+    {
+        float[,] data = new float[resolution, resolution];
+        using (var file = File.OpenRead("Assets/DEM raw/terrain file_" + idx + "_" + idy + ".raw"))
+        using (var reader = new BinaryReader(file))
+        {
+            for (int y = 0; y < resolution; y++)
+            {
+                for (int x = 0; x < resolution; x++)
+                {
+                    float v = (float)reader.ReadUInt16() / 0x4000;
+                    data[y, x] = v;
+                }
+            }
+        }
+        return data;
     }
 }
 

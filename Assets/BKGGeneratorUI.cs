@@ -75,6 +75,7 @@ public class BKGGeneratorUI : EditorWindow
 
         GUILayout.ExpandHeight(false);
         GUILayout.ExpandWidth(false);
+
         #region Load Data
         GUILayout.BeginArea(LoadDataArea);
         lat = EditorGUILayout.FloatField("Latitude", lat);
@@ -102,7 +103,7 @@ public class BKGGeneratorUI : EditorWindow
         if (GUILayout.Button("Render Data"))
         {
             renderer = new TerrainRenderer();
-            renderer.Init(minIndex.x, maxIndex.y, minIndex.y, maxIndex.y, resolution);
+            renderer.Init(minIndex.x, minIndex.y, maxIndex.x, maxIndex.y, resolution);
             renderer.Run();
         }
         GUILayout.EndArea();
