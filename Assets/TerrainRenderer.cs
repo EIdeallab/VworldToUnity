@@ -12,16 +12,18 @@ public class TerrainRenderer : MonoBehaviour
     private int maxIdy;
 
     private int resolution;
+    private int terrainHeight;
     
     private Terrain[,] terrrains;
 
-    public void Init (int minX, int minY, int maxX, int maxY, int res)
+    public void Init (int minX, int minY, int maxX, int maxY, int res, int height)
     {
         minIdx = minX;
         minIdy = minY;
         maxIdx = maxX;
         maxIdy = maxY;
         resolution = res;
+        terrainHeight = height;
     }
 
     public void Run ()
@@ -104,12 +106,12 @@ public class TerrainRenderer : MonoBehaviour
         using (var file = File.OpenRead("Assets/DEM raw/terrain file_" + idx + "_" + idy + ".raw"))
         using (var reader = new BinaryReader(file))
         {
-            for (int y = 0; y < resolution; y++)
+            for (int y = 0; y < 65; y++)
             {
-                for (int x = 0; x < resolution; x++)
+                for (int x = 0; x < 65; x++)
                 {
-                    float v = (float)reader.ReadUInt16() / 0x4000;
-                    data[y, x] = v;
+                    float v = (float)reader.ReadUInt16() / 0xFFFF;
+                    data[y, x] = v * terrainHeight;
                 }
             }
         }

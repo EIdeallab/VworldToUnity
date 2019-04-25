@@ -35,7 +35,7 @@ public class BKGGenerator
     static int totalTask = 0;
     static int progress = 0;
 
-    //중복 다운이나 변환하지 않도록 저장할 폴더
+    // 중복 다운이나 변환하지 않도록 저장할 폴더
     private static string storageDirectory;
     private static int fileSize;
 
@@ -180,7 +180,7 @@ public class BKGGenerator
         {
             //terrain height
             //vworld에서 제공하는 DEM이 65x65개의 점으로 되어 있다.
-            for (int ny = 64; ny >= 0; ny--)
+            for (int ny = 0; ny < 65; ny++)
             {
                 for (int nx = 0; nx < 65; nx++)
                 {

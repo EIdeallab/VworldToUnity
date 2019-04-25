@@ -13,6 +13,7 @@ public class BKGGeneratorUI : EditorWindow
     private static Vector2Int minIndex;
     private static Vector2Int maxIndex;
     private static int resolution;
+    private static int height;
 
     private static float progress;
 
@@ -51,7 +52,12 @@ public class BKGGeneratorUI : EditorWindow
     private int Resolution
     {
         get { return resolution; }
-        set { resolution = Mathf.NextPowerOfTwo(value); }
+        set { resolution = Mathf.NextPowerOfTwo(value - 1) + 1; }
+    }
+    private int Height
+    {
+        get { return height; }
+        set { height = value; }
     }
 
     [MenuItem("Background/Background Creator")]
@@ -61,7 +67,10 @@ public class BKGGeneratorUI : EditorWindow
         lon = 0;
         rad = 30000;
         level = 8;
-        
+
+        resolution = 64;
+        height = 50;
+
         window = GetWindow<BKGGeneratorUI>();
         window.maxSize = window.minSize = new Vector2(300, 400);
         window.Show();
@@ -70,8 +79,8 @@ public class BKGGeneratorUI : EditorWindow
     private void OnGUI()
     {
         int offset = 0;
-        LoadDataArea = new Rect(3, offset += 0, position.width-6, 100);
-        RenderDataArea = new Rect(3, offset += 100, position.width-6, 120);
+        LoadDataArea = new Rect(3, offset += 0, position.width - 6, 100);
+        RenderDataArea = new Rect(3, offset += 100, position.width - 6, 130);
 
         GUILayout.ExpandHeight(false);
         GUILayout.ExpandWidth(false);
@@ -88,7 +97,7 @@ public class BKGGeneratorUI : EditorWindow
             generator.Init(lat, lon, rad, level);
             generator.Generate();
         }
-        if(generator != null)
+        if (generator != null)
             Progress = generator.GetProgressStatus();
         else
             Progress = 0;
@@ -99,11 +108,12 @@ public class BKGGeneratorUI : EditorWindow
         GUILayout.BeginArea(RenderDataArea);
         minIndex = EditorGUILayout.Vector2IntField("MinIndex", minIndex);
         maxIndex = EditorGUILayout.Vector2IntField("MaxIndex", maxIndex);
-        resolution = EditorGUILayout.IntSlider(resolution, 32, 1024);
+        Resolution = EditorGUILayout.IntSlider(Resolution, 32, 1024);
+        Height = EditorGUILayout.IntSlider(Height, 1, 100);
         if (GUILayout.Button("Render Data"))
         {
             renderer = new TerrainRenderer();
-            renderer.Init(minIndex.x, minIndex.y, maxIndex.x, maxIndex.y, resolution);
+            renderer.Init(minIndex.x, minIndex.y, maxIndex.x, maxIndex.y, resolution, Height);
             renderer.Run();
         }
         GUILayout.EndArea();
