@@ -1,9 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System;
 using UnityEngine;
 
+/// <summary>
+/// Terrain Render class. need idx, idy, resolution input.
+/// </summary>
 public class TerrainRenderer : MonoBehaviour
 {
     private int minIdx;
@@ -16,6 +17,9 @@ public class TerrainRenderer : MonoBehaviour
     
     private Terrain[,] terrrains;
 
+    /// <summary>
+    /// Initialize render class
+    /// </summary>
     public void Init (int minX, int minY, int maxX, int maxY, int res, int height)
     {
         minIdx = minX;
@@ -26,13 +30,15 @@ public class TerrainRenderer : MonoBehaviour
         terrainHeight = height;
     }
 
+    /// <summary>
+    /// Main render function
+    /// </summary>
     public void Run ()
     {
-        // File check
+        // File check process
         DirectoryInfo info = new DirectoryInfo(Application.dataPath + "\\DEM raw\\");
         if (info == null)
             return;
-        FileInfo[] fileInfo = info.GetFiles();
 
         for (int y = minIdy; y < maxIdy; y++)
         {
@@ -47,12 +53,14 @@ public class TerrainRenderer : MonoBehaviour
             }
         }
         
+        // If all file exist, start render process.
         int mx = maxIdx - minIdx;
         int my = maxIdy - minIdy;
         for (int y = 0; y < my; y++)
         {
             for (int x = 0; x < mx; x++)
             {
+                // Load dds Textures
                 byte[] bytes = File.ReadAllBytes(@"Assets\DEM dds\tile_" + (x + minIdx) + "_" + (y + minIdy) + ".dds");
                 Texture2D ddsTexture = LoadTextureDXT(bytes, TextureFormat.DXT1);
                 ddsTexture.filterMode = FilterMode.Bilinear;
@@ -61,12 +69,12 @@ public class TerrainRenderer : MonoBehaviour
                 tex[0].texture = ddsTexture;
                 tex[0].tileSize = new Vector2(resolution, resolution);
 
+                // Create Terrain Data
                 TerrainData terrainData = new TerrainData();
                 terrainData.splatPrototypes = tex;
                 terrainData.heightmapResolution = resolution;
                 terrainData.size = new Vector3(resolution, resolution, resolution);
                 float[,] heightMap = LoadHeigtmap(x + minIdx, y + minIdy);
-
                 terrainData.SetHeights(0, 0, heightMap);
 
                 // Create Game Object
@@ -77,6 +85,9 @@ public class TerrainRenderer : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Read DDS and return unity Texture2D
+    /// </summary>
     public static Texture2D LoadTextureDXT(byte[] ddsBytes, TextureFormat textureFormat)
     {
         if (textureFormat != TextureFormat.DXT1 && textureFormat != TextureFormat.DXT5)
@@ -100,12 +111,16 @@ public class TerrainRenderer : MonoBehaviour
         return texture;
     }
 
+    /// <summary>
+    /// Read RAW file to Rendering
+    /// </summary>
     public float[,] LoadHeigtmap(int idx, int idy)
     {
         float[,] data = new float[resolution, resolution];
         using (var file = File.OpenRead("Assets/DEM raw/terrain file_" + idx + "_" + idy + ".raw"))
         using (var reader = new BinaryReader(file))
         {
+            // Vworld texture is always 65 x 65
             for (int y = 0; y < 65; y++)
             {
                 for (int x = 0; x < 65; x++)
