@@ -60,8 +60,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Loader.cs" />
+    <Compile Include="Assets\LoaderUI.cs" />
+    <Compile Include="Assets\ObjectLoader.cs" />
     <Compile Include="Assets\TerrainLoader.cs" />
-    <Compile Include="Assets\TerrainLoaderUI.cs" />
     <Compile Include="Assets\TerrainRenderer.cs" />
     <Reference Include="UnityEditor.StandardEvents">
       <HintPath>C:/Users/adsha/Desktop/VworldToUnity/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>

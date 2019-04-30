@@ -5,7 +5,7 @@ using UnityEngine;
 /// <summary>
 /// Terrain Render class. need idx, idy, resolution input.
 /// </summary>
-public class TerrainRenderer : MonoBehaviour
+public class TerrainRenderer
 {
     private int minIdx;
     private int minIdy;
@@ -56,9 +56,9 @@ public class TerrainRenderer : MonoBehaviour
         // If all file exist, start render process.
         int mx = maxIdx - minIdx;
         int my = maxIdy - minIdy;
-        for (int y = 0; y < my; y++)
+        for (int y = 0; y <= my; y++)
         {
-            for (int x = 0; x < mx; x++)
+            for (int x = 0; x <= mx; x++)
             {
                 // Load dds Textures
                 byte[] bytes = File.ReadAllBytes(@"Assets\DEM dds\tile_" + (x + minIdx) + "_" + (y + minIdy) + ".dds");

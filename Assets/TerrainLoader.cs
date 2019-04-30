@@ -8,37 +8,14 @@ using UnityEngine;
 /// <summary>
 /// This Class Provide DEM and DDS datas from Vworld. It Need API key.
 /// </summary>
-public class TerrainLoader
+public class TerrainLoader : Loader
 {
-    private static float lat = 0;
-    private static float lon = 0;
-    private static int rad = 0;
-    private static int lv = 0;
-    private static float unit = 0;
-
-    // Indices for load terrain file
-    private static int minIdx;
-    private static int minIdy;
-    private static int maxIdx;
-    private static int maxIdy;
-
     // Load exist file names to avoid unnecessary downloading.
     private List<string> fileExistBil;
     private List<string> fileExistRaw;
     private List<string> fileNamesDds;
 
     // Vworld api url, Vworld api key.
-    private string url3 = @"http://xdworld.vworld.kr:8080/XDServer/requestLayerNode?APIKey=";
-    private string apiKey;
-
-    // File count. need to show downloading progress.
-    static int totalTask = 0;
-    static int progress = 0;
-
-    // File Storage folder.
-    private static string storageDirectory;
-    private static int fileSize;
-
     public TerrainLoader(string apikey) {
         storageDirectory = Application.dataPath;
         apiKey = apikey;
@@ -53,7 +30,7 @@ public class TerrainLoader
     /// <summary>
     /// Initialize data api
     /// </summary>
-    public void Init(float latitude, float longitude, int radius, int level)
+    public override void Init(float latitude, float longitude, int radius, int level)
     {
         lat = latitude;
         lon = longitude;
@@ -63,17 +40,9 @@ public class TerrainLoader
     }
 
     /// <summary>
-    /// Get download progress status.
-    /// </summary>
-    public float GetProgressStatus()
-    {
-        return (totalTask != 0) ? (float)progress/ totalTask : 0;
-    }
-
-    /// <summary>
     /// Core load funtion. Always call this after the init()
     /// </summary>
-    public void Generate()
+    public override void Generate()
     {
         // Create Sub folders. bil(vworld dem data), raw(dem image), dds(dem texture image)
         string[] folders1 = { "\\DEM bil", "\\DEM raw", "\\DEM dds" };
@@ -106,37 +75,9 @@ public class TerrainLoader
     }
 
     /// <summary>
-    /// Create sub folders when there are no folders exist
-    /// </summary>
-    private void MakeSubFolders(string fileLocation, string[] subfolders)
-    {
-        string[] files = Directory.GetDirectories(fileLocation);
-        foreach (string subfolder in subfolders)
-        {
-            bool isExist = false;
-            if (files != null)
-            {
-                for (int j = 0; j < files.Length; j++)
-                {
-                    if (files[j].Equals(subfolder))
-                    {
-                        isExist = true; // If folder exists then skip
-                        break;
-                    }
-                } 
-            }
-            if (!isExist)
-            {
-                DirectoryInfo newDir = Directory.CreateDirectory(fileLocation + subfolder);
-                newDir.Create();
-            }
-        }
-    }
-
-    /// <summary>
     /// Thread run funtion to load data.
     /// </summary>
-    public void Run()
+    public override void Run()
     {
         string layerName = "dem";
         string layerName2 = "tile";
@@ -206,54 +147,5 @@ public class TerrainLoader
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Send Http request and download files into storage folder
-    /// </summary>
-    private long RequestFile(string address, string fileName)
-    {
-        long size = 0;
-        string url = address;
-        try
-        {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-            request.AutomaticDecompression = DecompressionMethods.GZip;
-
-            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
-            using (Stream stream = response.GetResponseStream())
-            using (FileStream fileStream = File.OpenWrite(storageDirectory + fileName))
-            {
-                stream.CopyTo(fileStream);
-                size = stream.Length;
-            }
-        }
-        catch (Exception)
-        {
-            return -1;
-        }
-        return size;
-    }
-
-    /// <summary>
-    /// Returns the names of files with a particular extension.
-    /// </summary>
-    private List<string> GetFileNames(string fileLocation, string extension)
-    {
-        List<string> fileNames = new List<string>();
-        string[] files = Directory.GetFiles(fileLocation);
-
-        // If directory is not empty
-        if (!(files.Length <= 0))
-        {
-            for (int i = 0; i < files.Length; i++)
-            {
-                if (files[i].EndsWith(extension))
-                {
-                    fileNames.Add(files[i]);
-                }
-            }
-        }
-        return fileNames;
     }
 }
